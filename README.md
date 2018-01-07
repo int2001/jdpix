@@ -7,6 +7,7 @@ Prerequisites:
 * Microcontroller:
   * Arduino 1.8. IDE
   * ESP8266 Arduino Add-on - https://github.com/esp8266/Arduino
+  * WS2812-I2C Library included (taken from https://github.com/scottlawsonbc/audio-reactive-led-strip )
 * Host
   * Perl
   * IO::Socket::INET
