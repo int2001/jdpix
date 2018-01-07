@@ -7,8 +7,8 @@ use jdpix;
 # Initalise LEDs
 my $client=new jdpix({host => "trixel", port => 7777, leds =>256});
 
-# Do Confetti 8192 Times
-for (my $led=0;$led<256;$led++) {
+# Blank All LEDs
+for (my $led=0;$led<$client->{'leds'};$led++) {
 	$client->set_rgb($led,0,0,0);
 	$client->show();
 }
