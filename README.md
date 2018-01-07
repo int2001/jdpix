@@ -24,4 +24,4 @@ I decided to implement a new protocol (OpenPixelControl was the template - but i
 3. R or H
 4. G or S
 5. B or V
-* Packets must bei 1400 Bytes long (fill rest with 0x00)
+* Packets must be 1400 Bytes long (fill rest with 0x00)
