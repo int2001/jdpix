@@ -9,9 +9,11 @@ my $client=new jdpix({host => "trixel", port => 7777, leds =>256});
 
 my $maxx=16;
 my $maxy=16;
+my $bright=64;
 
 while (1) {
 	wave_diagonal();
+	wave_topdown();
 }
 
 $client->init_arr();
@@ -20,20 +22,20 @@ $client->show();
 $client->disconnect();
 
 sub wave_diagonal {
-	for (my $x=0;$x<16;$x++) { # 1st half 
-			for (my $i=0;$i<=($x%16);$i++) {
-				$client->set_hsv(xy2led($i,$x-$i),(($x%16)*(255/16))%255,255,64);
+	for (my $x=0;$x<$maxx;$x++) { # 1st half 
+			for (my $i=0;$i<=($x%$maxx);$i++) {
+				$client->set_hsv(xy2led($i,$x-$i),(($x%$maxx)*(255/$maxx))%255,255,$bright);
 			}
 		$client->show();
-		$client->fade2black(int(64/16));
+		$client->fade2black(int($bright/$maxx));
 		usleep(1000*25);
 	}
-	for (my $x=15;$x>=0;$x--) { # 2nd half
-			for (my $i=0;$i<=($x%16);$i++) {
-				$client->set_hsv(xy2led(15-$i,15-($x-$i)),(($x%16)*(255/16))%255,255,64);
+	for (my $x=$maxx-1;$x>=0;$x--) { # 2nd half
+			for (my $i=0;$i<=($x%$maxx);$i++) {
+				$client->set_hsv(xy2led($maxx-1-$i,$maxx-1-($x-$i)),(($x%$maxx)*(255/$maxx))%255,255,$bright);
 			}
 		$client->show();
-		$client->fade2black(int(64/16));
+		$client->fade2black(int($bright/$maxx));
 		usleep(1000*25);
 	}
 }
@@ -42,10 +44,10 @@ sub wave_topdown {
 	for (my $y=0;$y<$maxy;$y++) {
 		for (my $x=0;$x<$maxx;$x++) {
 			my $led=xy2led($x,$y);
-			$client->set_hsv($led,(($y)*(255/16))%255,255,64);
+			$client->set_hsv($led,(($y)*(255/$maxx))%255,255,$bright);
 		}
 		$client->show();
-		$client->fade2black(int(64/8));
+		$client->fade2black(int($bright/($maxx/2)));
 		usleep(1000*20);
 	}
 }
@@ -54,10 +56,10 @@ sub onceall {
 	for (my $y=0;$y<$maxy;$y++) {
 		for (my $x=0;$x<$maxx;$x++) {
 			my $led=xy2led($x,$y);
-			$client->fade2black(int(64/16));
-			$client->set_hsv($led,($x*$y)%255,255,64);
+			$client->fade2black(int($bright/$maxx));
+			$client->set_hsv($led,($x*$y)%255,255,$bright);
 			$client->show();
-			usleep(1000*20);
+			usleep(1000*25);
 		}
 	}
 }
