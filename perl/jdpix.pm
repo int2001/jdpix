@@ -43,11 +43,28 @@ sub fade2black {				# Fades all LEDs down by $amount (works for HSV and RGB)
 	my($self,$amount)=@_;
 	for (my $i=0;$i<=$self->{'leds'};$i++) {
 		if ($self->{'arr'}->[$i]->[3]==1) {
-			$self->{'arr'}->[$i]->[2]-=$amount if ($self->{'arr'}->[$i]->[2]-$amount>=0);
+			if ($self->{'arr'}->[$i]->[2]-$amount>=0) {
+				$self->{'arr'}->[$i]->[2]-=$amount;
+			} else {
+				$self->{'arr'}->[$i]->[2]=0;
+			}
+
 		} else {
-			$self->{'arr'}->[$i]->[0]-=$amount if ($self->{'arr'}->[$i]->[0]-$amount>=0);
-			$self->{'arr'}->[$i]->[1]-=$amount if ($self->{'arr'}->[$i]->[1]-$amount>=0);
-			$self->{'arr'}->[$i]->[2]-=$amount if ($self->{'arr'}->[$i]->[2]-$amount>=0);
+			if ($self->{'arr'}->[$i]->[0]-$amount>=0) {
+				$self->{'arr'}->[$i]->[0]-=$amount;
+			} else {
+				$self->{'arr'}->[$i]->[0]=0;
+			}
+			if ($self->{'arr'}->[$i]->[1]-$amount>=0) {
+				$self->{'arr'}->[$i]->[1]-=$amount;
+			} else {
+				$self->{'arr'}->[$i]->[1]=0;
+			}
+			if ($self->{'arr'}->[$i]->[2]-$amount>=0) {
+				$self->{'arr'}->[$i]->[2]-=$amount;
+			} else {
+				$self->{'arr'}->[$i]->[2]=0;
+			}
 		}
 	}
 }

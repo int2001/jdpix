@@ -10,21 +10,54 @@ my $client=new jdpix({host => "trixel", port => 7777, leds =>256});
 my $maxx=16;
 my $maxy=16;
 
-# Blank All LEDs
-for (my $y=0;$y<$maxy;$y++) {
-	for (my $x=0;$x<$maxx;$x++) {
-		my $led=xy2led($x,$y);
-		$client->fade2black(int(64/16));
-		$client->set_hsv($led,($x*$y)%255,255,64);
-		$client->show();
-		usleep(1000*20);
-	}
+while (1) {
+	wave_diagonal();
+	wave_topdown();
+	onceall();
 }
 
 $client->init_arr();
 $client->show();
 
 $client->disconnect();
+
+sub wave_diagonal {
+	for (my $y=0;$y<$maxy;$y++) {
+		for (my $x=0;$x<=$y;$x++) {
+			my $led=xy2led($x,$y);
+			$client->set_hsv($led,(($x)*(255/16))%255,255,64);
+			$led=xy2led($y,$x);
+			$client->set_hsv($led,(($x)*(255/16))%255,255,64);
+		}
+		$client->show();
+		$client->fade2black(int(64/8));
+		usleep(1000*20);
+	}
+}
+
+sub wave_topdown {
+	for (my $y=0;$y<$maxy;$y++) {
+		for (my $x=0;$x<$maxx;$x++) {
+			my $led=xy2led($x,$y);
+			$client->set_hsv($led,(($y)*(255/16))%255,255,64);
+		}
+		$client->show();
+		$client->fade2black(int(64/8));
+		usleep(1000*20);
+	}
+}
+
+sub onceall {
+	for (my $y=0;$y<$maxy;$y++) {
+		for (my $x=0;$x<$maxx;$x++) {
+			my $led=xy2led($x,$y);
+			$client->fade2black(int(64/16));
+			$client->set_hsv($led,($x*$y)%255,255,64);
+			$client->show();
+			usleep(1000*20);
+		}
+	}
+}
 
 sub xy2led {
 	# Rechnet X,Y in LED-pos an.
@@ -40,18 +73,18 @@ sub xy2led {
 	my($x,$y)=@_;
 	my $upperpanel=0;
 	my ($i,$reverseY);
-	$x=16-1-$x;
-	if ( $y > 7 ) { # 2 Panelreihe? Dann 8 abziehen.
-		$y=$y-8;
+	$y=16-1-$y;
+	if ( $x > 7 ) { # 2 Panelreihe? Dann 8 abziehen.
+		$x=$x-8;
 		$upperpanel=0; 
 	} else {
 		$upperpanel=1;
 	}
-	if(($x%2)==1) { # Ungerade Reihen werden Rückwärts gezählt.
-		$reverseY = (8 - 1) - $y;
-		$i = ($x * 8) + $reverseY;
+	if(($y%2)==1) { # Ungerade Reihen werden Rückwärts gezählt.
+		$reverseY = (8 - 1) - $x;
+		$i = ($y * 8) + $reverseY;
 	} else {
-		$i = ($x * 8) + $y;
+		$i = ($y * 8) + $x;
 	}
 	if (($upperpanel)) { # Obere Panelreihe? Dann 128 draufaddieren
 		$i=$i+128;
