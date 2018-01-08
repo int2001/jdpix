@@ -3,6 +3,8 @@
 
 Small project to control a WS2812B-Matrix/Strip via Network.
 
+[![Demo](https://img.youtube.com/vi/-SwjtgpEjXo/0.jpg)](https://www.youtube.com/watch?v=-SwjtgpEjXo)
+
 Prerequisites:
 * Microcontroller:
   * Arduino 1.8. IDE
