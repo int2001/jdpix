@@ -2,6 +2,7 @@
 
 use strict;
 use Time::HiRes qw(usleep);
+use Data::Dumper;
 use jdpix;
 
 # Initalise LEDs
@@ -22,21 +23,12 @@ $client->show();
 $client->disconnect();
 
 sub wave_diagonal {
-	for (my $x=0;$x<$maxx;$x++) { # 1st half 
-			for (my $i=0;$i<=($x%$maxx);$i++) {
-				$client->set_hsv(xy2led($i,$x-$i),(($x%$maxx)*(255/$maxx))%255,255,$bright);
-			}
+	for (my $i=0;$i<32;$i++) {
+		drawline(0,$i,$i,0,$client->CHSV($i*4,255,64)) if ($i<16);
+		drawline($i%16,15,15,$i%16,$client->CHSV($i*4,255,64)) if ($i>15);
+		usleep(1000*20);
 		$client->show();
 		$client->fade2black(int($bright/$maxx));
-		usleep(1000*25);
-	}
-	for (my $x=$maxx-1;$x>=0;$x--) { # 2nd half
-			for (my $i=0;$i<=($x%$maxx);$i++) {
-				$client->set_hsv(xy2led($maxx-1-$i,$maxx-1-($x-$i)),(($x%$maxx)*(255/$maxx))%255,255,$bright);
-			}
-		$client->show();
-		$client->fade2black(int($bright/$maxx));
-		usleep(1000*25);
 	}
 }
 
@@ -97,3 +89,15 @@ sub xy2led {
 	return $i;
 }
 
+sub drawline {
+	my($x1,$y1,$x2,$y2,$r,$g,$b,$mode)=@_;
+	my $dx=$x2-$x1;
+	my $dy=$y2-$y1;
+	if (($dx == 0) && ($dy == 0)) {
+		$client->{'arr'}->[xy2led($x1,$y1)]=[$r,$g,$b,$mode];
+	} else {
+		for (my $x=$x1;($x1>$x2) ? $x>=$x2 : $x<=$x2;($x1>$x2) ? $x--: $x++) {
+			$client->{'arr'}->[xy2led($x,int($y1+$dy*($x-$x1)/$dx))]=[$r,$g,$b,$mode];
+		}
+	}
+}

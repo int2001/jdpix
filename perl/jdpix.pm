@@ -101,6 +101,16 @@ sub show {					# Alias for send_it
 	$self->send_it();
 }
 
+sub CHSV {
+	my ($self,$h,$s,$v)=@_;
+	return($h,$s,$v,1);
+}
+
+sub CRGB {
+	my ($self,$r,$g,$b)=@_;
+	return($r,$g,$b,0);
+}
+
 sub send_it {					# Transmits Array to ESP
 	my ($self)=@_;
 	$self->{'frames'}++;
