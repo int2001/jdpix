@@ -13,9 +13,9 @@ my $maxy=16;
 my $bright=64;
 
 while (1) {
-	draw_circles(5);
-	wave_topdown();
-	wave_diagonal();
+	draw_circles(3);
+	#wave_topdown();
+	#wave_diagonal();
 }
 
 $client->init_arr();
@@ -123,35 +123,18 @@ sub drawline {
 }
 
 sub circle {
-	my ($x0, $y0, $radius,$r,$g,$b,$mode)=@_;
-	my $x = $radius-1;
+	my ($x0,$y0,$radius,$r,$g,$b,$mode)=@_;
+	my $x = -$radius;
 	my $y = 0;
-	my $dx = 1;
-	my $dy = 1;
-	my $err = $dx - ($radius << 1);
-
-	while ($x >= $y)
-	{
-		$client->{'arr'}->[xy2led($x0 + $x, $y0 + $y)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 + $y, $y0 + $x)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 - $y, $y0 + $x)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 - $x, $y0 + $y)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 - $x, $y0 - $y)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 - $y, $y0 - $x)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 + $y, $y0 - $x)]=[$r,$g,$b,$mode];
-		$client->{'arr'}->[xy2led($x0 + $x, $y0 - $y)]=[$r,$g,$b,$mode];
-
-		if ($err <= 0)
-		{
-			$y++;
-			$err += $dy;
-			$dy += 2;
-		}
-		if ($err > 0)
-		{
-			$x--;
-			$dx += 2;
-			$err += $dx - ($radius << 1);
-		}
-	}
+	my $err = 2-2*$radius; # /* II. Quadrant */ 
+	while ($x<0) {
+		$client->{'arr'}->[xy2led($x0-$x, $y0+$y)]=[$r,$g,$b,$mode]; # /*   I. Quadrant */
+		$client->{'arr'}->[xy2led($x0-$y, $y0-$x)]=[$r,$g,$b,$mode]; # /*   II. Quadrant */
+		$client->{'arr'}->[xy2led($x0+$x, $y0-$y)]=[$r,$g,$b,$mode]; # /*   III. Quadrant */
+		$client->{'arr'}->[xy2led($x0+$y, $y0+$x)]=[$r,$g,$b,$mode]; # /*   IV. Quadrant */
+		$radius = $err;
+		if ($radius <= $y) { $err += ++$y*2+1; } #          /* e_xy+e_y < 0 */
+		if ($radius > $x || $err > $y) { $err += ++$x*2+1; } # /* e_xy+e_x > 0 or no 2nd y-step */
+	} 
 }
+
