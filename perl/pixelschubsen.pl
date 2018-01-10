@@ -90,6 +90,7 @@ sub xy2led {
 }
 
 sub drawline {
+	## ToDo: Fix the error by drawing virtical Line (divid by Zero);
 	my($x1,$y1,$x2,$y2,$r,$g,$b,$mode)=@_;
 	my $dx=$x2-$x1;
 	my $dy=$y2-$y1;
