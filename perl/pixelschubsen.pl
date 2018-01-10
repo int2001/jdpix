@@ -95,9 +95,13 @@ sub drawline {
 	my $dy=$y2-$y1;
 	if (($dx == 0) && ($dy == 0)) {
 		$client->{'arr'}->[xy2led($x1,$y1)]=[$r,$g,$b,$mode];
-	} else {
+	} elsif ($dx > 0) {
 		for (my $x=$x1;($x1>$x2) ? $x>=$x2 : $x<=$x2;($x1>$x2) ? $x--: $x++) {
 			$client->{'arr'}->[xy2led($x,int($y1+$dy*($x-$x1)/$dx))]=[$r,$g,$b,$mode];
+		}
+	} else {
+		for (my $y=$y1;($y1>$y2) ? $y>=$y2 : $y<=$y2;($y1>$y2) ? $y--: $y++) {
+			$client->{'arr'}->[xy2led($y,int($x1+$dx*($y-$y1)/$dy))]=[$r,$g,$b,$mode];
 		}
 	}
 }
