@@ -13,9 +13,11 @@ my $maxy=16;
 my $bright=64;
 
 while (1) {
-	draw_circles(3);
-	#wave_topdown();
-	#wave_diagonal();
+aacircle(8,8,6,$client->CRGB(64,64,64));
+$client->show();
+#	draw_circles(6);
+#	wave_topdown();
+#	wave_diagonal();
 }
 
 $client->init_arr();
@@ -28,7 +30,8 @@ sub draw_circles {
 	for (my $i=-$rad;$i<($maxx+$rad);$i++) {
 		my $yprozent=($i+$rad)/($maxx+($rad*2));
 		my $ypos=int(sin(($yprozent*(3.14152*4)))*($maxy/2));
-		circle($i,$ypos+($maxy/2),$rad,$client->CHSV(0,255,64));
+		aacircle($i,$ypos+($maxy/2),$rad,$client->CHSV(0,255,64));
+		#circle($ypos+($maxy/2),$i,$rad,$client->CHSV(80,255,64));
 		$client->show();
 		$client->init_arr();
 		usleep(1000*100);
@@ -138,3 +141,69 @@ sub circle {
 	} 
 }
 
+sub aacircle {
+	my ($x0,$y0,$radius,$r,$g,$b,$mode)=@_;
+	my $x = $radius;
+	my $y = 0;
+	my ($i, $x2, $e2);
+	my $err = 2-2*$radius;             
+	$radius = 1-$err;
+	my ($nr,$ng,$nb);
+	while (1) {
+		$i = ($err+2*($x+$y)-2)/$radius; 	# Correctionfactor for brightness
+		if ($mode == 0) {	# RGB Correction
+			$nr=int(abs($r*$i));
+			$ng=int(abs($g*$i));
+			$nb=int(abs($b*$i));
+		} else {		# HSV Correction
+			$nr=$r;
+			$ng=$g;
+			$nb=int(abs($b*$i));
+		}
+		$client->{'arr'}->[xy2led($x0+$x, $y0-$y)]=[$nr,$ng,$nb,$mode]; 
+		$client->{'arr'}->[xy2led($x0+$y, $y0+$x)]=[$nr,$ng,$nb,$mode];
+		$client->{'arr'}->[xy2led($x0-$x, $y0+$y)]=[$nr,$ng,$nb,$mode];
+		$client->{'arr'}->[xy2led($x0-$y, $y0-$x)]=[$nr,$ng,$nb,$mode];
+		last if ($x == 0);
+		$e2 = $err; 
+		$x2 = $x; 
+		if ($err > $y) {
+			$i = ($err+2*$x-1)/$radius;                              
+			if ($mode == 0) {	# RGB Correction
+				$nr=int(abs($r*$i));
+				$ng=int(abs($g*$i));
+				$nb=int(abs($b*$i));
+			} else {		# HSV Correction
+				$nr=$r;
+				$ng=$g;
+				$nb=int(abs($b*$i));
+			}
+			if ($i < 1) {
+				$client->{'arr'}->[xy2led($x0+$x, $y0-$y+1)]=[$nr,$ng,$nb,$mode]; 
+				$client->{'arr'}->[xy2led($x0+$y-1, $y0+$x)]=[$nr,$ng,$nb,$mode];
+				$client->{'arr'}->[xy2led($x0-$x, $y0+$y-1)]=[$nr,$ng,$nb,$mode];
+				$client->{'arr'}->[xy2led($x0-$y+1, $y0-$x)]=[$nr,$ng,$nb,$mode];
+			}  
+			$err -= --$x*2-1; 
+		} 
+		if ($e2 <= $x2--) {   
+			$i = (1-2*$y-$e2)/$radius;  
+			if ($mode == 0) {	# RGB Correction
+				$nr=int(abs($r*$i));
+				$ng=int(abs($g*$i));
+				$nb=int(abs($b*$i));
+			} else {		# HSV Correction
+				$nr=$r;
+				$ng=$g;
+				$nb=int(abs($b*$i));
+			}
+			if ($i < 1) {
+				$client->{'arr'}->[xy2led($x0+$x2, $y0-$y)]=[$nr,$ng,$nb,$mode]; 
+				$client->{'arr'}->[xy2led($x0+$y, $y0+$x2)]=[$nr,$ng,$nb,$mode];
+				$client->{'arr'}->[xy2led($x0-$x2, $y0+$y)]=[$nr,$ng,$nb,$mode];
+				$client->{'arr'}->[xy2led($x0-$y, $y0-$x2)]=[$nr,$ng,$nb,$mode];
+			}  
+			$err -= --$y*2-1; 
+		} 
+	}
+}
