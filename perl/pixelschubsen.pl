@@ -13,14 +13,27 @@ my $maxy=16;
 my $bright=64;
 
 while (1) {
-	wave_diagonal();
+	draw_circles(5);
 	wave_topdown();
+	wave_diagonal();
 }
 
 $client->init_arr();
 $client->show();
 
 $client->disconnect();
+
+sub draw_circles {
+	my ($rad)=@_;
+	for (my $i=-$rad;$i<($maxx+$rad);$i++) {
+		my $yprozent=($i+$rad)/($maxx+($rad*2));
+		my $ypos=int(sin(($yprozent*(3.14152*4)))*($maxy/2));
+		circle($i,$ypos+($maxy/2),$rad,$client->CHSV(0,255,64));
+		$client->show();
+		$client->init_arr();
+		usleep(1000*100);
+	}
+}
 
 sub wave_diagonal {
 	for (my $i=0;$i<32;$i++) {
@@ -68,23 +81,26 @@ sub xy2led {
 	# 17,18,19,20,21,22,23,24 usw.
 	#
 	my($x,$y)=@_;
-	my $upperpanel=0;
 	my ($i,$reverseY);
-	$y=16-1-$y;
-	if ( $x > 7 ) { # 2 Panelreihe? Dann 8 abziehen.
-		$x=$x-8;
-		$upperpanel=0; 
-	} else {
-		$upperpanel=1;
-	}
-	if(($y%2)==1) { # Ungerade Reihen werden Rückwärts gezählt.
-		$reverseY = (8 - 1) - $x;
-		$i = ($y * 8) + $reverseY;
-	} else {
-		$i = ($y * 8) + $x;
-	}
-	if (($upperpanel)) { # Obere Panelreihe? Dann 128 draufaddieren
-		$i=$i+128;
+	$i=-1;
+	if (($x<$maxx) && ($x>=0) && ($y<$maxy) && ($y>=0)) {
+		my $upperpanel=0;
+		$y=16-1-$y;
+		if ( $x > 7 ) { # 2 Panelreihe? Dann 8 abziehen.
+			$x=$x-8;
+			$upperpanel=0; 
+		} else {
+			$upperpanel=1;
+		}
+		if(($y%2)==1) { # Ungerade Reihen werden Rückwärts gezählt.
+			$reverseY = (8 - 1) - $x;
+			$i = ($y * 8) + $reverseY;
+		} else {
+			$i = ($y * 8) + $x;
+		}
+		if (($upperpanel)) { # Obere Panelreihe? Dann 128 draufaddieren
+			$i=$i+128;
+		}
 	}
 	return $i;
 }
@@ -102,6 +118,40 @@ sub drawline {
 	} else {
 		for (my $y=$y1;($y1>$y2) ? $y>=$y2 : $y<=$y2;($y1>$y2) ? $y--: $y++) {
 			$client->{'arr'}->[xy2led($y,int($x1+$dx*($y-$y1)/$dy))]=[$r,$g,$b,$mode];
+		}
+	}
+}
+
+sub circle {
+	my ($x0, $y0, $radius,$r,$g,$b,$mode)=@_;
+	my $x = $radius-1;
+	my $y = 0;
+	my $dx = 1;
+	my $dy = 1;
+	my $err = $dx - ($radius << 1);
+
+	while ($x >= $y)
+	{
+		$client->{'arr'}->[xy2led($x0 + $x, $y0 + $y)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 + $y, $y0 + $x)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 - $y, $y0 + $x)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 - $x, $y0 + $y)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 - $x, $y0 - $y)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 - $y, $y0 - $x)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 + $y, $y0 - $x)]=[$r,$g,$b,$mode];
+		$client->{'arr'}->[xy2led($x0 + $x, $y0 - $y)]=[$r,$g,$b,$mode];
+
+		if ($err <= 0)
+		{
+			$y++;
+			$err += $dy;
+			$dy += 2;
+		}
+		if ($err > 0)
+		{
+			$x--;
+			$dx += 2;
+			$err += $dx - ($radius << 1);
 		}
 	}
 }
