@@ -13,11 +13,9 @@ my $maxy=16;
 my $bright=64;
 
 while (1) {
-aacircle(8,8,6,$client->CRGB(64,64,64));
-$client->show();
-#	draw_circles(6);
-#	wave_topdown();
-#	wave_diagonal();
+	draw_circles(6);
+	#wave_topdown();
+	#wave_diagonal();
 }
 
 $client->init_arr();
@@ -31,7 +29,7 @@ sub draw_circles {
 		my $yprozent=($i+$rad)/($maxx+($rad*2));
 		my $ypos=int(sin(($yprozent*(3.14152*4)))*($maxy/2));
 		aacircle($i,$ypos+($maxy/2),$rad,$client->CHSV(0,255,64));
-		#circle($ypos+($maxy/2),$i,$rad,$client->CHSV(80,255,64));
+		aacircle($ypos+($maxy/2),$i,$rad,$client->CHSV(80,255,64));
 		$client->show();
 		$client->init_arr();
 		usleep(1000*100);
@@ -151,6 +149,7 @@ sub aacircle {
 	my ($nr,$ng,$nb);
 	while (1) {
 		$i = ($err+2*($x+$y)-2)/$radius; 	# Correctionfactor for brightness
+		$i-=1;
 		if ($mode == 0) {	# RGB Correction
 			$nr=int(abs($r*$i));
 			$ng=int(abs($g*$i));
@@ -169,6 +168,7 @@ sub aacircle {
 		$x2 = $x; 
 		if ($err > $y) {
 			$i = ($err+2*$x-1)/$radius;                              
+			$i-=1;
 			if ($mode == 0) {	# RGB Correction
 				$nr=int(abs($r*$i));
 				$ng=int(abs($g*$i));
@@ -188,6 +188,7 @@ sub aacircle {
 		} 
 		if ($e2 <= $x2--) {   
 			$i = (1-2*$y-$e2)/$radius;  
+			$i-=1;
 			if ($mode == 0) {	# RGB Correction
 				$nr=int(abs($r*$i));
 				$ng=int(abs($g*$i));
