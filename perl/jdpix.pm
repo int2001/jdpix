@@ -166,20 +166,20 @@ sub xy2led {
 }
 
 sub drawline {
-	my($self,$x1,$y1,$x2,$y2,$r,$g,$b,$mode)=@_;
-	my $dx=$x2-$x1;
-	my $dy=$y2-$y1;
-	if (($dx == 0) && ($dy == 0)) {
-		$self->{'arr'}->[xy2led($x1,$y1)]=[$r,$g,$b,$mode];
-	} elsif ($dx > 0) {
-		for (my $x=$x1;($x1>$x2) ? $x>=$x2 : $x<=$x2;($x1>$x2) ? $x--: $x++) {
-			$self->{'arr'}->[xy2led($x,int($y1+$dy*($x-$x1)/$dx))]=[$r,$g,$b,$mode];
-		}
-	} else {
-		for (my $y=$y1;($y1>$y2) ? $y>=$y2 : $y<=$y2;($y1>$y2) ? $y--: $y++) {
-			$self->{'arr'}->[xy2led($y,int($x1+$dx*($y-$y1)/$dy))]=[$r,$g,$b,$mode];
-		}
-	}
+	my($self,$x0,$y0,$x1,$y1,$r,$g,$b,$mode)=@_;
+	my $dx =  abs($x1-$x0);
+	my $sx =  ($x0<$x1) ? 1 : -1;
+   	my $dy = -abs($y1-$y0);
+	my $sy =  ($y0<$y1) ? 1 : -1;
+   	my $err = $dx+$dy;
+
+	while (1) {
+		$self->{'arr'}->[$self->xy2led($x0,$y0)]=[$r,$g,$b,$mode];
+		last if (($x0 == $x1) && ($y0 == $y1));
+      		my $e2 = 2*$err;
+      		if ($e2 >= $dy) { $err += $dy; $x0 += $sx; }
+      		if ($e2 <= $dx) { $err += $dx; $y0 += $sy; }
+   }
 }
 
 sub circle {

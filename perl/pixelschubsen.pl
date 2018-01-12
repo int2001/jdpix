@@ -14,8 +14,8 @@ my $bright=64;
 
 while (1) {
 	draw_circles(6);
-	#wave_topdown();
-	#wave_diagonal();
+	wave_topdown();
+	wave_diagonal();
 }
 
 $client->init_arr();
