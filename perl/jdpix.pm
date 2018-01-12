@@ -15,7 +15,9 @@ sub new {
 		leds => $args->{'leds'},	# Count of LEDs (should match to NUM_LEDS in Sketch)
 		socket => $socket,		# Holds the Socket
 		packetsize => 1400,		# Packetsize (must match to packetsize in Sketch)
-		arr => $arr			# LED-Array
+		arr => $arr,			# LED-Array
+		maxx => 16,			# Matrix: Maximum X-Size
+		maxy => 16			# Matrix: Maximum Y-Size
 	};
 	bless($self,$class);
 	$self->init_arr();			# initialise the Array once
@@ -125,6 +127,145 @@ sub send_it {					# Transmits Array to ESP
 	$message.=chr(00) while length($message)<$self->{'packetsize'};	# Fill Packet to packetsize
 	$self->{'socket'}->say($message);				# Send via UDP
 	$self->{'socket'}->flush();					# Flush it (no delay!)
+}
+
+sub xy2led {
+	# Rechnet X,Y in LED-pos an.
+	# Funktioniert bei folgendem Setup:
+	# 4 8x8 Panel wie folgt zusammengeschaltet:
+	# --> 1 -> 2
+	#  -> 3 -> 4
+	# Laufrichtung innerhalb eines Panels:
+	#  1, 2, 3, 4, 5, 6, 7, 8
+	# 16,15,14,13,12,11,19, 9 
+	# 17,18,19,20,21,22,23,24 usw.
+	#
+	my($self,$x,$y)=@_;
+	my ($i,$reverseY);
+	$i=-1;
+	if (($x<$self->{'maxx'}) && ($x>=0) && ($y<$self->{'maxy'}) && ($y>=0)) {
+		my $upperpanel=0;
+		$y=16-1-$y;
+		if ( $x > 7 ) { # 2 Panelreihe? Dann 8 abziehen.
+			$x=$x-8;
+			$upperpanel=0; 
+		} else {
+			$upperpanel=1;
+		}
+		if(($y%2)==1) { # Ungerade Reihen werden Rückwärts gezählt.
+			$reverseY = (8 - 1) - $x;
+			$i = ($y * 8) + $reverseY;
+		} else {
+			$i = ($y * 8) + $x;
+		}
+		if (($upperpanel)) { # Obere Panelreihe? Dann 128 draufaddieren
+			$i=$i+128;
+		}
+	}
+	return $i;
+}
+
+sub drawline {
+	my($self,$x1,$y1,$x2,$y2,$r,$g,$b,$mode)=@_;
+	my $dx=$x2-$x1;
+	my $dy=$y2-$y1;
+	if (($dx == 0) && ($dy == 0)) {
+		$self->{'arr'}->[xy2led($x1,$y1)]=[$r,$g,$b,$mode];
+	} elsif ($dx > 0) {
+		for (my $x=$x1;($x1>$x2) ? $x>=$x2 : $x<=$x2;($x1>$x2) ? $x--: $x++) {
+			$self->{'arr'}->[xy2led($x,int($y1+$dy*($x-$x1)/$dx))]=[$r,$g,$b,$mode];
+		}
+	} else {
+		for (my $y=$y1;($y1>$y2) ? $y>=$y2 : $y<=$y2;($y1>$y2) ? $y--: $y++) {
+			$self->{'arr'}->[xy2led($y,int($x1+$dx*($y-$y1)/$dy))]=[$r,$g,$b,$mode];
+		}
+	}
+}
+
+sub circle {
+	my ($self,$x0,$y0,$radius,$r,$g,$b,$mode)=@_;
+	my $x = -$radius;
+	my $y = 0;
+	my $err = 2-2*$radius; # /* II. Quadrant */ 
+	while ($x<0) {
+		$self->{'arr'}->[$self->xy2led($x0-$x, $y0+$y)]=[$r,$g,$b,$mode]; # /*   I. Quadrant */
+		$self->{'arr'}->[$self->xy2led($x0-$y, $y0-$x)]=[$r,$g,$b,$mode]; # /*   II. Quadrant */
+		$self->{'arr'}->[$self->xy2led($x0+$x, $y0-$y)]=[$r,$g,$b,$mode]; # /*   III. Quadrant */
+		$self->{'arr'}->[$self->xy2led($x0+$y, $y0+$x)]=[$r,$g,$b,$mode]; # /*   IV. Quadrant */
+		$radius = $err;
+		if ($radius <= $y) { $err += ++$y*2+1; } #          /* e_xy+e_y < 0 */
+		if ($radius > $x || $err > $y) { $err += ++$x*2+1; } # /* e_xy+e_x > 0 or no 2nd y-step */
+	} 
+}
+
+sub aacircle {
+	my ($self,$x0,$y0,$radius,$r,$g,$b,$mode)=@_;
+	my $x = $radius;
+	my $y = 0;
+	my ($i, $x2, $e2);
+	my $err = 2-2*$radius;             
+	$radius = 1-$err;
+	my ($nr,$ng,$nb);
+	while (1) {
+		$i = ($err+2*($x+$y)-2)/$radius; 	# Correctionfactor for brightness
+		$i-=1;
+		if ($mode == 0) {	# RGB Correction
+			$nr=int(abs($r*$i));
+			$ng=int(abs($g*$i));
+			$nb=int(abs($b*$i));
+		} else {		# HSV Correction
+			$nr=$r;
+			$ng=$g;
+			$nb=int(abs($b*$i));
+		}
+		$self->{'arr'}->[$self->xy2led($x0+$x, $y0-$y)]=[$nr,$ng,$nb,$mode]; 
+		$self->{'arr'}->[$self->xy2led($x0+$y, $y0+$x)]=[$nr,$ng,$nb,$mode];
+		$self->{'arr'}->[$self->xy2led($x0-$x, $y0+$y)]=[$nr,$ng,$nb,$mode];
+		$self->{'arr'}->[$self->xy2led($x0-$y, $y0-$x)]=[$nr,$ng,$nb,$mode];
+		last if ($x == 0);
+		$e2 = $err; 
+		$x2 = $x; 
+		if ($err > $y) {
+			$i = ($err+2*$x-1)/$radius;                              
+			$i-=1;
+			if ($mode == 0) {	# RGB Correction
+				$nr=int(abs($r*$i));
+				$ng=int(abs($g*$i));
+				$nb=int(abs($b*$i));
+			} else {		# HSV Correction
+				$nr=$r;
+				$ng=$g;
+				$nb=int(abs($b*$i));
+			}
+			if ($i < 1) {
+				$self->{'arr'}->[$self->xy2led($x0+$x, $y0-$y+1)]=[$nr,$ng,$nb,$mode]; 
+				$self->{'arr'}->[$self->xy2led($x0+$y-1, $y0+$x)]=[$nr,$ng,$nb,$mode];
+				$self->{'arr'}->[$self->xy2led($x0-$x, $y0+$y-1)]=[$nr,$ng,$nb,$mode];
+				$self->{'arr'}->[$self->xy2led($x0-$y+1, $y0-$x)]=[$nr,$ng,$nb,$mode];
+			}  
+			$err -= --$x*2-1; 
+		} 
+		if ($e2 <= $x2--) {   
+			$i = (1-2*$y-$e2)/$radius;  
+			$i-=1;
+			if ($mode == 0) {	# RGB Correction
+				$nr=int(abs($r*$i));
+				$ng=int(abs($g*$i));
+				$nb=int(abs($b*$i));
+			} else {		# HSV Correction
+				$nr=$r;
+				$ng=$g;
+				$nb=int(abs($b*$i));
+			}
+			if ($i < 1) {
+				$self->{'arr'}->[$self->xy2led($x0+$x2, $y0-$y)]=[$nr,$ng,$nb,$mode]; 
+				$self->{'arr'}->[$self->xy2led($x0+$y, $y0+$x2)]=[$nr,$ng,$nb,$mode];
+				$self->{'arr'}->[$self->xy2led($x0-$x2, $y0+$y)]=[$nr,$ng,$nb,$mode];
+				$self->{'arr'}->[$self->xy2led($x0-$y, $y0-$x2)]=[$nr,$ng,$nb,$mode];
+			}  
+			$err -= --$y*2-1; 
+		} 
+	}
 }
 
 return 1;
